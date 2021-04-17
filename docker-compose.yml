@@ -1,0 +1,102 @@
+# Версия docker-compose
+version: '2'
+# Список сервисов (контейнеров)
+services:
+    nginx:
+        image: nginx
+        volumes:
+            - ./configs/nginx.conf:/etc/nginx/conf.d/default.conf
+            - ./configs/ssl/:/var/www/ssl/
+        ports:
+            - "80:80"
+            - "443:443"
+        depends_on:
+            - webphp
+
+    webphp:
+      build: ./images/php
+      ports:
+        - "8100:8100"
+      user: "1000:1000"
+      volumes:
+        - ~/.ssh:/root/.ssh # для ssh ключей
+        - /home/seryak:/home/seryak # для ssh ключей
+        - /etc/group:/etc/group:ro
+        - /etc/passwd:/etc/passwd:ro
+        - /etc/shadow:/etc/shadow:ro
+        - $SSH_AUTH_SOCK:/ssh-agent # Forward local machine SSH key to docker
+        - ./www/:/var/www/html # директория с сайтами
+        - ./configs/apache2.conf:/usr/local/apache2/conf/httpd.conf # конфиг апача
+        - ./configs/php.ini:/usr/local/etc/php/php.ini  # конфиг php
+        - ./configs/vhosts:/etc/apache2/sites-enabled/ # хосты апача
+      
+      environment:
+        SSH_AUTH_SOCK: /ssh-agent
+      
+      links:
+        - mysql
+
+    webphpold:
+      build: ./images/php7.1
+      ports:
+        - "8101:8101"
+      volumes:
+        - ./www/:/var/www/html # директория с сайтами
+        - ./configs/new/apache2.conf:/usr/local/apache2/conf/httpd.conf # конфиг апача
+        - ./configs/php.ini:/usr/local/etc/php/php.ini  # конфиг php
+        - ./configs/vhosts:/etc/apache2/sites-enabled/ # хосты апача
+
+      links:
+        - mysql
+
+
+        # - postgres
+
+    mysql:
+        image: mysql:5.7
+        ports:
+            - "3306:3306"
+        command: mysqld --sql_mode="" # отключаем строгий режим mysql
+        volumes:
+            - ./data/mysql:/var/lib/mysql # папка с базами
+            # - ./config/mysqld.cnf:/etc/mysql/mysql.conf.d/mysqld.cnf
+            # - ./config/my.cnf:/etc/my.cnf
+        # задаем пароль для root пользователя
+        environment:
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_ROOT_HOST=%
+
+#    sftp:
+#        image: atmoz/sftp
+#        ports:
+#            - "2222:22"
+#        volumes:
+#          - ./www/:/home/foo/html # директория с сайтами
+#          - ./www/cx/:/home/kireev/usuz.game # Киреев
+#          - ./configs/sftp-users.conf:/etc/sftp/users.conf:ro
+
+
+    # elastic:
+    #     build: ./images/elastic
+    #     container_name: elastic
+    #     ports:
+    #       - 9200:9200
+    #       - 9300:9300
+
+    # postgres:
+    #     image: postgres:9.6
+    #     ports:
+    #       - "5432:5432"
+    #     volumes:
+    #       - ./data/postgres:/var/lib/postgresql # папка с базами
+    #     environment:
+    #       POSTGRES_USER: pguser
+    #       POSTGRES_PASSWORD: pguser
+    #       POSTGRES_DB: pgdb
+
+#    crond:
+#      container_name: crond
+#      image: willfarrell/crontab
+#      volumes:
+#        - /var/run/docker.sock:/var/run/docker.sock:ro
+#        - .config/config.json.dev:/opt/crontab/config.json:rw

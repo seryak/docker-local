@@ -1,0 +1,18 @@
+[
+  {
+    "comment": "DISABLED",
+    "schedule": "# */1 * * * *",
+    "command": "hostname -f"
+  },
+  {
+    "comment": "RSS update",
+    "schedule": "@every 60m",
+    "command": "php /var/www/html/rss.wtolk/update.php --feeds",
+    "container": "docker_webphpwtolk_1"
+  },
+  {
+    "comment": "ss19.rf",
+    "schedule": "45 6 * * *",
+    "command": "/home/docker/www/ss19/python/dist/.ex_mail"
+  }  
+]
